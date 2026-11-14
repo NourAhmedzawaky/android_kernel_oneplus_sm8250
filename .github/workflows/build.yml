@@ -30,8 +30,11 @@ jobs:
 
       - name: Add KernelSU Next
         run: |
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
-
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy    
+      - name: Debug KSU hook options
+        run: |
+          grep -n "config KSU" drivers/kernelsu/Kconfig
+          sed -n 195,225p drivers/kernelsu/Kbuild
       - name: Build
         env:
           DEFCONFIG: vendor/kona-perf_defconfig
