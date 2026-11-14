@@ -1,0 +1,79 @@
+name: Build KSU Next kernel (kebab, LOS 24.0)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lineage-24.0
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-14 lld-14 llvm-14 \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+            bc bison flex libssl-dev libelf-dev zip curl git \
+            device-tree-compiler python3
+
+      - name: Show available defconfigs
+        run: |
+          ls arch/arm64/configs | head -50
+          ls arch/arm64/configs/vendor 2>/dev/null | head -80
+
+      - name: Add KernelSU Next
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s next
+
+      - name: Build
+        env:
+          # GUESS: check the "Show available defconfigs" step output
+          DEFCONFIG: vendor/kona-perf_defconfig
+        run: |
+          export PATH=/usr/lib/llvm-14/bin:$PATH
+          MK="make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
+          $MK $DEFCONFIG
+          scripts/config --file out/.config -e KSU -e KPROBES -e HAVE_KPROBES -e KPROBE_EVENTS
+          $MK olddefconfig
+          $MK Image
+
+      - name: Package with AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
+          cd AnyKernel3
+          rm -rf .git README.md
+          cp ../out/arch/arm64/boot/Image .
+          cat > anykernel.sh <<'EOF'
+          ### AnyKernel3 Ramdisk Mod Script
+          properties() { '
+          kernel.string=KSU Next kebab
+          do_devicecheck=1
+          do_modules=0
+          do_systemless=0
+          do_cleanup=1
+          do_cleanuponabort=0
+          device.name1=OnePlus8T
+          device.name2=kebab
+          supported.versions=
+          supported.patchlevels=
+          supported.vendorpatchlevels=
+          '; }
+          BLOCK=boot;
+          IS_SLOT_DEVICE=auto;
+          RAMDISK_COMPRESSION=auto;
+          PATCH_VBMETA_FLAG=auto;
+          . tools/ak3-core.sh;
+          split_boot;
+          flash_boot;
+          EOF
+          sed -i 's/^          //' anykernel.sh
+          zip -r9 ../kebab-ksunext-los24.zip . -x '.git*'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kebab-ksunext-los24
+          path: kebab-ksunext-los24.zip
