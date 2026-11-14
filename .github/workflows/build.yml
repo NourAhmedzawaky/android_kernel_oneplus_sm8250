@@ -34,7 +34,7 @@ jobs:
       - name: Debug KSU hook options
         run: |
           grep -n "config KSU" drivers/kernelsu/Kconfig
-          sed -n 195,225p drivers/kernelsu/Kbuild
+                    sed -n 40,90p drivers/kernelsu/Kconfig
       - name: Build
         env:
           DEFCONFIG: vendor/kona-perf_defconfig
@@ -42,11 +42,12 @@ jobs:
           export PATH=/usr/lib/llvm-18/bin:$PATH
           MK="make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
           $MK $DEFCONFIG
-          scripts/config --file out/.config -e KSU -e KPROBES -e HAVE_KPROBES -e KPROBE_EVENTS -e KSU_KPROBES_HOOK -e KSU_KPROBE_HOOKS
+          scripts/config --file out/.config -e KSU -e KSU_SYSCALL_TABLE_HOOK
           $MK olddefconfig
           grep -E "KSU|KPROBES" out/.config || true
           $MK Image > build.log 2>&1 || true
           grep -nE "error:|\*\*\*|KernelSU" build.log | head -60 || true
+          grep -E "CONFIG_KSU|CONFIG_KPROBES" out/.config || true
           test -f out/arch/arm64/boot/Image
 
       - name: Package with AnyKernel3
