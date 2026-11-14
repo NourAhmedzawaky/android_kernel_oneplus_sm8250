@@ -15,11 +15,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 lld-18 llvm-18 \
+          sudo apt-get install -y \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
             bc bison flex libssl-dev libelf-dev zip curl git \
-            device-tree-compiler python3
-
+            device-tree-compiler python3 wget lsb-release software-properties-common gnupg
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 18
+          sudo apt-get install -y lld-18 llvm-18
       - name: Show available defconfigs
         run: |
           ls arch/arm64/configs | head -50
