@@ -42,7 +42,7 @@ jobs:
           export PATH=/usr/lib/llvm-18/bin:$PATH
           MK="make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
           $MK $DEFCONFIG
-          scripts/config --file out/.config -e KSU -e KSU_SYSCALL_TABLE_HOOK
+          scripts/config --file out/.config -e KSU -d KSU_MANUAL_HOOK -e KSU_SYSCALL_TABLE_HOOK
           $MK olddefconfig
           grep -E "KSU|KPROBES" out/.config || true
           $MK Image > build.log 2>&1 || true
