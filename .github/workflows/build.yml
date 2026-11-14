@@ -34,15 +34,17 @@ jobs:
 
       - name: Build
         env:
-          # GUESS: check the "Show available defconfigs" step output
           DEFCONFIG: vendor/kona-perf_defconfig
         run: |
           export PATH=/usr/lib/llvm-18/bin:$PATH
           MK="make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
           $MK $DEFCONFIG
-          scripts/config --file out/.config -e KSU -e KPROBES -e HAVE_KPROBES -e KPROBE_EVENTS -e KSU_KPROBE_HOOKS
+          scripts/config --file out/.config -e KSU -e KPROBES -e HAVE_KPROBES -e KPROBE_EVENTS -e KSU_KPROBES_HOOK -e KSU_KPROBE_HOOKS
           $MK olddefconfig
-          $MK Image
+          grep -E "KSU|KPROBES" out/.config || true
+          $MK Image > build.log 2>&1 || true
+          grep -nE "error:|\*\*\*|KernelSU" build.log | head -60 || true
+          test -f out/arch/arm64/boot/Image
 
       - name: Package with AnyKernel3
         run: |
