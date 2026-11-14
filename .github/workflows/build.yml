@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-14 lld-14 llvm-14 \
+          sudo apt-get install -y clang-18 lld-18 llvm-18 \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
             bc bison flex libssl-dev libelf-dev zip curl git \
             device-tree-compiler python3
@@ -34,7 +34,7 @@ jobs:
           # GUESS: check the "Show available defconfigs" step output
           DEFCONFIG: vendor/kona-perf_defconfig
         run: |
-          export PATH=/usr/lib/llvm-14/bin:$PATH
+          export PATH=/usr/lib/llvm-18/bin:$PATH
           MK="make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
           $MK $DEFCONFIG
           scripts/config --file out/.config -e KSU -e KPROBES -e HAVE_KPROBES -e KPROBE_EVENTS
