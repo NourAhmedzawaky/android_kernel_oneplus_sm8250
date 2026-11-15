@@ -45,9 +45,11 @@ jobs:
           export PATH=/usr/lib/llvm-18/bin:$PATH
           MK="make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
           $MK $DEFCONFIG
+          scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/oplus.config
           scripts/config --file out/.config -e KSU -d KSU_MANUAL_HOOK -e KSU_SYSCALL_TABLE_HOOK
           $MK olddefconfig
           grep -E "CONFIG_KSU|CONFIG_KPROBES" out/.config || true
+          grep -nE "SMB5|SCHGM|OPLUS_CHG" arch/arm64/configs/vendor/oplus.config || true
           $MK Image > build.log 2>&1 || true
           echo "=== ERRORS ==="
           grep -nE "error:|undefined|\*\*\*" build.log | head -40 || true
