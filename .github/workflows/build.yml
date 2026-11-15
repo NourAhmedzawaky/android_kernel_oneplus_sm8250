@@ -33,6 +33,11 @@ jobs:
           sed -i '/^#define copy_to_kernel_nofault/,+1d' drivers/kernelsu/hook/patch_memory.c
           sed -n 8,20p drivers/kernelsu/hook/patch_memory.c
 
+      - name: List defconfigs
+        run: |
+          ls arch/arm64/configs | grep -iE "kebab|lineage|sm8250|kona|oneplus|op8" || true
+          ls arch/arm64/configs/vendor 2>/dev/null | head -80
+          grep -nE "SCHGM|SMB5|OPLUS_CHG" arch/arm64/configs/vendor/kona-perf_defconfig || true
       - name: Build
         env:
           DEFCONFIG: vendor/kona-perf_defconfig
