@@ -23,26 +23,16 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 18
           sudo apt-get install -y lld-18 llvm-18
-      - name: Show available defconfigs
-        run: |
-          ls arch/arm64/configs | head -50
-          ls arch/arm64/configs/vendor 2>/dev/null | head -80
 
       - name: Add KernelSU Next
         run: |
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy    
-      - name: Debug KSU hook options
-        run: |
-          grep -n "config KSU" drivers/kernelsu/Kconfig
-                    sed -n 40,90p drivers/kernelsu/Kconfig
-      - name: Debug uaccess error
-        run: |
-          sed -n 300,310p include/linux/uaccess.h
-          grep -nE "#define|#include|probe_kernel|nofault" drivers/kernelsu/hook/patch_memory.c | head -40
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
+
       - name: Fix KSU patch_memory shim
         run: |
           sed -i '/^#define copy_to_kernel_nofault/,+1d' drivers/kernelsu/hook/patch_memory.c
           sed -n 8,20p drivers/kernelsu/hook/patch_memory.c
+
       - name: Build
         env:
           DEFCONFIG: vendor/kona-perf_defconfig
@@ -54,9 +44,12 @@ jobs:
           $MK olddefconfig
           grep -E "CONFIG_KSU|CONFIG_KPROBES" out/.config || true
           $MK Image > build.log 2>&1 || true
+          echo "=== ERRORS ==="
           grep -nE "error:|undefined|\*\*\*" build.log | head -40 || true
+          echo "=== LAST 25 LINES ==="
           tail -25 build.log
           test -f out/arch/arm64/boot/Image
+
       - name: Package with AnyKernel3
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3
