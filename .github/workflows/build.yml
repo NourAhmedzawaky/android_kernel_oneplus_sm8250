@@ -38,6 +38,50 @@ jobs:
           ls arch/arm64/configs | grep -iE "kebab|lineage|sm8250|kona|oneplus|op8" || true
           ls arch/arm64/configs/vendor 2>/dev/null | head -80
           grep -nE "SCHGM|SMB5|OPLUS_CHG" arch/arm64/configs/vendor/kona-perf_defconfig || true
+      - name: Backport path_umount
+        run: |
+          python3 - <<'EOF'
+          p = 'fs/namespace.c'
+          s = open(p).read()
+          code = '''
+          static int can_umount(const struct path *path, int flags)
+          {
+          	struct mount *mnt = real_mount(path->mnt);
+
+          	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
+          		return -EINVAL;
+          	if (!may_mount())
+          		return -EPERM;
+          	if (path->dentry != path->mnt->mnt_root)
+          		return -EINVAL;
+          	if (!check_mnt(mnt))
+          		return -EINVAL;
+          	if (mnt->mnt.mnt_flags & MNT_LOCKED)
+          		return -EINVAL;
+          	if (flags & MNT_FORCE && !capable(CAP_SYS_ADMIN))
+          		return -EPERM;
+          	return 0;
+          }
+
+          int path_umount(struct path *path, int flags)
+          {
+          	struct mount *mnt = real_mount(path->mnt);
+          	int ret;
+
+          	ret = can_umount(path, flags);
+          	if (!ret)
+          		ret = do_umount(mnt, flags);
+          	dput(path->dentry);
+          	mntput_no_expire(mnt);
+          	return ret;
+          }
+          '''
+          m = 'SYSCALL_DEFINE2(umount,'
+          assert m in s, 'anchor not found'
+          if 'int path_umount' not in s:
+              s = s.replace(m, code + '\n' + m, 1)
+          open(p, 'w').write(s)
+          EOF
       - name: Build
         env:
           DEFCONFIG: vendor/kona-perf_defconfig
