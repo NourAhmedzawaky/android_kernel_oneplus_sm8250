@@ -39,6 +39,10 @@ jobs:
         run: |
           sed -n 300,310p include/linux/uaccess.h
           grep -nE "#define|#include|probe_kernel|nofault" drivers/kernelsu/hook/patch_memory.c | head -40
+      - name: Fix KSU patch_memory shim
+        run: |
+          sed -i '/^#define copy_to_kernel_nofault/,+1d' drivers/kernelsu/hook/patch_memory.c
+          sed -n 8,20p drivers/kernelsu/hook/patch_memory.c
       - name: Build
         env:
           DEFCONFIG: vendor/kona-perf_defconfig
