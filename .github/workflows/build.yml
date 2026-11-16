@@ -35,9 +35,15 @@ jobs:
       - name: Manual hooks
         run: |
           git clone --depth=1 -b mainline https://github.com/JackA1ltman/NonGKI_Kernel_Build_2nd /tmp/ngki
-          cp /tmp/ngki/Patches/syscall_hook_patches.sh /tmp/ngki/Patches/backport_patches.sh .
+          echo "=== FILES ==="
+          find /tmp/ngki -iname "*hook*" -o -iname "*backport*" | head -40
+          H=$(find /tmp/ngki -name syscall_hook_patches.sh | head -1)
+          echo "hook script: $H"
+          test -n "$H"
+          cp "$H" .
           bash syscall_hook_patches.sh
-          bash backport_patches.sh
+          B=$(find /tmp/ngki -name backport_patches.sh | head -1)
+          if [ -n "$B" ]; then cp "$B" . && bash backport_patches.sh; fi
           grep -n ksu_handle_sys_reboot kernel/reboot.c
       - name: List defconfigs
         run: |
