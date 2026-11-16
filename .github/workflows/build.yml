@@ -32,7 +32,13 @@ jobs:
         run: |
           sed -i '/^#define copy_to_kernel_nofault/,+1d' drivers/kernelsu/hook/patch_memory.c
           sed -n 8,20p drivers/kernelsu/hook/patch_memory.c
-
+      - name: Manual hooks
+        run: |
+          git clone --depth=1 -b mainline https://github.com/JackA1ltman/NonGKI_Kernel_Build_2nd /tmp/ngki
+          cp /tmp/ngki/Patches/syscall_hook_patches.sh /tmp/ngki/Patches/backport_patches.sh .
+          bash syscall_hook_patches.sh
+          bash backport_patches.sh
+          grep -n ksu_handle_sys_reboot kernel/reboot.c
       - name: List defconfigs
         run: |
           ls arch/arm64/configs | grep -iE "kebab|lineage|sm8250|kona|oneplus|op8" || true
@@ -90,7 +96,7 @@ jobs:
           MK="make -j$(nproc) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
           $MK $DEFCONFIG
           scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/oplus.config
-          scripts/config --file out/.config -e KSU -d KSU_MANUAL_HOOK -e KSU_SYSCALL_TABLE_HOOK
+          scripts/config --file out/.config -e KSU -e KSU_MANUAL_HOOK
           $MK olddefconfig
           grep -E "CONFIG_KSU|CONFIG_KPROBES" out/.config || true
           grep -nE "SMB5|SCHGM|OPLUS_CHG" arch/arm64/configs/vendor/oplus.config || true
