@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: lineage-24.0
+          ref: 98a7970af93b7e01ee77156e7fa0eb7e059a57f0
           fetch-depth: 1
 
       - name: Install dependencies
